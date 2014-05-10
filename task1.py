@@ -35,7 +35,7 @@ def list_update(lista):
 			updated_filelist.append(k)
 	return updated_filelist
 
-def snatch_file_content(filename):
+def extract_data(filename):
 	'''Gets contents of file with key=filename from bucket and returns them as string
 
 	This function has an example of a try, exception. Did not implement
@@ -44,20 +44,18 @@ def snatch_file_content(filename):
 	try:
 		k = Key(bucket)
 		k.key = filename 
-		return k.get_contents_as_string()
+		compressed_string = k.get_contents_as_string()
 	except S3ResponseError, err: 
 		raise S3Error('Error: %i: %s' % (err.status, err.reason))		
+	try:
+		return zlib.decompressed(compressed_string)
+	except:
+		return compressed_string
 
-def snatch_file(filename):
-	'''Gets file with key=filename and returns open file handle'''
-	print "snatched file"
-	return filename
-
-
-def extract_data(filegz):
+def currate_data(tsv_string):
 	'''TODO: decompress, load tsv, validate? return object or json'''
-	print filegz
-	return filegz
+	print tsv_string 
+	return tsv_string 
 
 def transform_data(json_or_string):
 	'''TODO: transform return json '''
@@ -65,21 +63,12 @@ def transform_data(json_or_string):
 	pass
 
 def load_data(json_string):
-	'''Create file compress and load to S3'''
-	print json_string
+	'''Json compress and load to S3'''
 	filename ="text.txt.gz" 
 	compressed_string = zlib.compress(json_string, 9)
 	k = Key(bucket)
 	k.key = filename
 	k.set_contents_from_string(compressed_string)	
-
-	#Code with file manipulation
-	#gz_file = gzip.open(filename, 'wb')
-	#gz_file.write(json_string)
-	#gz_file.close()
-	#k = Key(bucket)
-	#k.key = filename
-	#k.set_contents_from_filename(filename)
 	return filename
 	
 		
@@ -96,14 +85,15 @@ def daemon():
 		updated_filelist = list_update(filelist)
 		
 		for filename in updated_filelist:
-			content = snatch_file_content(filename)
-			print filename + " snatched! \n" 
+			content = extract_data(filename)
+			print filename + content +" snatched! \n" 
 			new_filename = load_data(content)
-
-			filegz = snatch_file(new_filename)
-			extracted_content = extract_data(filegz)
-			transformed_content = transform_data(extracted_content)
-			
+			print new_filename + " loaded! \n"
+			tsv_content = extract_data(new_filename)
+			print new_filename +content +" down! \n"
+			currated_content = currate_data(tsv_content)
+			transformed_content = transform_data(currated_content)
+			new_filename = load_data(transformed_content)	
 		#if not os.path.exists(dirpath) or not os.path.isdir(dirpath):
 		#	os.makedirs(dirpath)
 		#f = open(filepath,'w')
