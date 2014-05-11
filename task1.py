@@ -14,7 +14,7 @@ Its cleaner and could have speed advantages, although network is the bottleneck 
 
  
 import time
-import os, sys, gzip, zlib
+import os, sys, gzip, zlib, tempfile
 import boto as boto
 import uuid
 from boto.s3.connection import S3Connection
@@ -52,7 +52,8 @@ def extract_data(filename):
 	except S3ResponseError, err: 
 		raise S3Error('Error: %i: %s' % (err.status, err.reason))		
 	try:
-		return zlib.decompressed(compressed_string)
+		
+		return zlib.decompress(compressed_string, zlib.MAX_WBITS|32)
 	except:
 		return compressed_string
 
@@ -85,7 +86,7 @@ def daemon():
 		
 		for filename in updated_filelist:
 			tsv_content = extract_data(filename)
-			print filename + " snatched! \n" 
+			print filename + tsv_content + " snatched! \n" 
 			currated_content = currate_data(tsv_content)
 			print filename + " currated! \n" 
 			transformed_content = transform_data(currated_content)
