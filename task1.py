@@ -2,25 +2,30 @@
 
 '''
 
+This is the daemon service that handles download, de/compression, and file upload.
+
 Usage: run the file which includes daemon process
 
+TODO: The transformation of files is the next step. 
 Daemon could be implemented with python-daemon for niceness.
 
 Although the test explicitly states that there should be manipulation through files, 
 send_file returned a BadRequest so I implemented everything with contents anyway.
 Its cleaner and could have speed advantages, although network is the bottleneck here.
 
+TODO: After implementing service, exception handling could log certain errors, 
+without halting daemon.
+
 '''
 
  
 import time, re
-import os, sys, gzip, zlib, tempfile
-import boto as boto
+import os, zlib 
+import boto 
 import uuid
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
-from datetime import datetime
 
 class S3Error(Exception):
 	"Misc. S3 Service Error"
@@ -41,10 +46,14 @@ def list_update(lista):
 	return updated_filelist
 
 def filename_to_push(filename):
+	'''Creates filename to push back to S3'''
 	name = re.sub(r'\W+', ' ', filename)
-	words = name.split()
-	words = words[2:]
-	return name 
+	name_as_words = name.split()
+	name_as_words = name_as_words[2:-1]
+	prepended_words = [u'infrastructure',u'processed',u'teng_petros_lambropoulos']
+	push_name_in_words = prepended_words + name_as_words
+	push_name = '/'.join(push_name_in_words) + u'.gz'
+	return push_name 
 
 def extract_data(filename):
 	'''Gets contents of file with key=filename from bucket and returns them as string
