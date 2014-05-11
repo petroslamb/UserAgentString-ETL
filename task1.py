@@ -8,7 +8,7 @@ Daemon could be implemented with python-daemon for niceness.
 
 Although the test explicitly states that there should be manipulation through files, 
 send_file returned a BadRequest so I implemented everything with contents anyway.
-Its cleaner and could have speed advantages, although network the is the bottleneck here.
+Its cleaner and could have speed advantages, although network is the bottleneck here.
 
 '''
 
@@ -26,6 +26,10 @@ class S3Error(Exception):
 	"Misc. S3 Service Error"
 	pass
 
+env_profile = os.environ.get('AWS_USERNAME')
+env_key_id = os.environ['AWS_KEY_ID']
+env_access_key = os.environ['AWS_ACCESS_KEY']
+
 def list_update(lista):
 	'''Checks if bucket has new files and returns a list of them'''
 	updated_filelist = []
@@ -39,7 +43,7 @@ def extract_data(filename):
 	'''Gets contents of file with key=filename from bucket and returns them as string
 
 	This function has an example of a try, exception. Did not implement
-	everywhere because of the time constraint.
+	everywhere because of time constraints.
 	'''
 	try:
 		k = Key(bucket)
@@ -53,13 +57,11 @@ def extract_data(filename):
 		return compressed_string
 
 def currate_data(tsv_string):
-	'''TODO: decompress, load tsv, validate? return object or json'''
-	print tsv_string 
+	''' Clean data if needed '''
 	return tsv_string 
 
 def transform_data(json_or_string):
 	'''TODO: transform return json '''
-	print " transformation "
 	pass
 
 def load_data(json_string):
@@ -71,13 +73,10 @@ def load_data(json_string):
 	k.set_contents_from_string(compressed_string)	
 	return filename
 	
-		
 
 def daemon():
 	'''Main control function, the daemon runs every few seconds'''
 	filelist = []
-	#filepath = './sample.txt'
-	#dirpath = os.path.dirname(filepath)
 
 	while True:
 	
@@ -85,26 +84,29 @@ def daemon():
 		updated_filelist = list_update(filelist)
 		
 		for filename in updated_filelist:
-			content = extract_data(filename)
+			tsv_content = extract_data(filename)
 			print filename + content +" snatched! \n" 
-			new_filename = load_data(content)
-			print new_filename + " loaded! \n"
-			tsv_content = extract_data(new_filename)
-			print new_filename +content +" down! \n"
 			currated_content = currate_data(tsv_content)
+			print filename + content +" currated! \n" 
 			transformed_content = transform_data(currated_content)
-			new_filename = load_data(transformed_content)	
+			print filename + content +"transformed! \n" 
+			new_filename = load_data(transformed_content)
+			print filename + content +" pushed! \n" 
+	
 		#if not os.path.exists(dirpath) or not os.path.isdir(dirpath):
 		#	os.makedirs(dirpath)
 		#f = open(filepath,'w')
 		#f.write(datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S'))
 		#f.close()
+
+		# Filelist should be saved to file and reloaded to help with service errors
+		# A cleanup file should also be mustered.
 		filelist.extend(updated_filelist)	
 		time.sleep(2)
 
 if __name__=="__main__":
 
 
-	conn =S3Connection()
-	bucket = conn.get_bucket('kuvas')
+	conn = S3Connection(aws_access_key_id=env_key_id, aws_secret_access_key=env_access_key, profile_name=env_profile)
+	bucket = conn.get_bucket('af-testcs')
 	daemon()
