@@ -85,20 +85,14 @@ def daemon():
 		
 		for filename in updated_filelist:
 			tsv_content = extract_data(filename)
-			print filename + content +" snatched! \n" 
+			print filename + " snatched! \n" 
 			currated_content = currate_data(tsv_content)
-			print filename + content +" currated! \n" 
+			print filename + " currated! \n" 
 			transformed_content = transform_data(currated_content)
-			print filename + content +"transformed! \n" 
-			new_filename = load_data(transformed_content)
-			print filename + content +" pushed! \n" 
+			print filename + " transformed! \n" 
+			#new_filename = load_data(transformed_content)
+			#print filename + " pushed! \n" 
 	
-		#if not os.path.exists(dirpath) or not os.path.isdir(dirpath):
-		#	os.makedirs(dirpath)
-		#f = open(filepath,'w')
-		#f.write(datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S'))
-		#f.close()
-
 		# Filelist should be saved to file and reloaded to help with service errors
 		# A cleanup file should also be mustered.
 		filelist.extend(updated_filelist)	
