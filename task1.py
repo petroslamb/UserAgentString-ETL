@@ -13,7 +13,7 @@ Its cleaner and could have speed advantages, although network is the bottleneck 
 '''
 
  
-import time
+import time, re
 import os, sys, gzip, zlib, tempfile
 import boto as boto
 import uuid
@@ -34,10 +34,17 @@ def list_update(lista):
 	'''Checks if bucket has new files and returns a list of them'''
 	updated_filelist = []
 	for key in bucket.list():
-		k =key.name.encode('utf-8')
-		if k not in lista:
-			updated_filelist.append(k)
+		#k =key.name.encode('utf-8')
+		if key.key not in lista:
+			if u'infrastructure/logs' in key.key:
+				updated_filelist.append(key.key)
 	return updated_filelist
+
+def filename_to_push(filename):
+	name = re.sub(r'\W+', ' ', filename)
+	words = name.split()
+	words = words[2:]
+	return name 
 
 def extract_data(filename):
 	'''Gets contents of file with key=filename from bucket and returns them as string
@@ -47,15 +54,15 @@ def extract_data(filename):
 	'''
 	try:
 		k = Key(bucket)
-		k.key = filename 
+		k.key = filename
+		push_filename = filename_to_push(filename) 
 		compressed_string = k.get_contents_as_string()
 	except S3ResponseError, err: 
 		raise S3Error('Error: %i: %s' % (err.status, err.reason))		
 	try:
-		
-		return zlib.decompress(compressed_string, zlib.MAX_WBITS|32)
-	except:
-		return compressed_string
+		return push_filename, zlib.decompress(compressed_string, zlib.MAX_WBITS|32)
+	except DecompressException:
+		print 'Could not decompress file ' + filename
 
 def currate_data(tsv_string):
 	''' Clean data if needed '''
@@ -65,14 +72,13 @@ def transform_data(json_or_string):
 	'''TODO: transform return json '''
 	pass
 
-def load_data(json_string):
-	'''Json compress and load to S3'''
-	filename ="text.txt.gz" 
+def load_data(push_name, json_string):
+	'''TODO: Json compress and load to S3'''
 	compressed_string = zlib.compress(json_string, 9)
 	k = Key(bucket)
-	k.key = filename
+	k.key = push_name 
 	k.set_contents_from_string(compressed_string)	
-	return filename
+	return compressed_string 
 	
 
 def daemon():
@@ -85,17 +91,21 @@ def daemon():
 		updated_filelist = list_update(filelist)
 		
 		for filename in updated_filelist:
-			tsv_content = extract_data(filename)
-			print filename + tsv_content + " snatched! \n" 
+
+			push_filename, tsv_content = extract_data(filename)
+			print filename +  " snatched! \n" 
+
 			currated_content = currate_data(tsv_content)
 			print filename + " currated! \n" 
+
 			transformed_content = transform_data(currated_content)
-			print filename + " transformed! \n" 
-			#new_filename = load_data(transformed_content)
+			print push_filename + " transformed! \n" 
+
+			#compressed_string = load_data(push_filename, transformed_content)
 			#print filename + " pushed! \n" 
 	
 		# Filelist should be saved to file and reloaded to help with service errors
-		# A cleanup file should also be mustered.
+		# A cleanup script should also clean that file when we need to rerun from scratch.
 		filelist.extend(updated_filelist)	
 		time.sleep(2)
 
