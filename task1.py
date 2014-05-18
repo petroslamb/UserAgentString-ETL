@@ -6,7 +6,6 @@ This is the daemon service that handles download, de/compression, and file uploa
 
 Usage: run the file which includes daemon process
 
-TODO: The transformation of files is the next step. 
 Daemon could be implemented with python-daemon for niceness.
 
 Although the test explicitly states that there should be manipulation through files, 
@@ -28,8 +27,6 @@ from boto.s3.key import Key
 from boto.exception import S3ResponseError
 import csv
 from user_agents import parse
-#import redis
-#import re
 import json 
 import transform
 
@@ -79,8 +76,12 @@ def extract_data(filename):
 		print 'Could not decompress file ' + filename
 
 def currate_data(tsv_string):
-	''' Clean data if needed '''
-	return tsv_string 
+	''' Clean data if needed. 
+
+	This is a good place to do validation.
+	'''
+	reader = csv.reader(tsv_string.split('\n'), delimiter = '\t', quoting=csv.QUOTE_NONE)
+	return reader 
 
 def transform_data(tsv_string):
 	'''Transform, return json.
