@@ -26,7 +26,12 @@ import uuid
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
-import transform.py
+import csv
+from user_agents import parse
+#import redis
+#import re
+import json 
+import transform
 
 class S3Error(Exception):
 	"Misc. S3 Service Error"
@@ -77,9 +82,13 @@ def currate_data(tsv_string):
 	''' Clean data if needed '''
 	return tsv_string 
 
-def transform_data(json_or_string):
-	'''TODO: transform return json '''
-	pass
+def transform_data(tsv_string):
+	'''Transform, return json.
+
+	This was made into a separate module (transport) for clarity.
+	'''
+	return transform.make_all_json_responses(tsv_string)
+	
 
 def load_data(push_name, json_string):
 	'''TODO: Json compress and load to S3'''

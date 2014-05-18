@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
-import csv
-from user_agents import parse
-import redis
-import re
-import json 
-from urllib2 import urlopen
+#import csv
+#from user_agents import parse
+#import redis
+#import re
+#import json 
+#from urllib2 import urlopen
 import sys
 sys.path.append('/home/pet/affectv/geodis/src/')
 import src.geodis as geodis
@@ -13,18 +13,24 @@ import src.geodis as geodis
 conn = geodis.redis.Redis(db=8)
 
 def make_all_json_responses(tsv_string):
+	'''Main function of this module
+
+	This function loops through the strings and returns the json objects as a list
+	'''
 	json_responses = []
-	#with open('sample.txt', 'rb') as f:
-		reader = csv.reader([tsv_string], delimiter = '\t', quoting=csv.QUOTE_NONE)
-		for row_list in reader:
+	reader = csv.reader(tsv_string.split('\n'), delimiter = '\t', quoting=csv.QUOTE_NONE)
+	for row_list in reader:
+		if row_list: 
 			ua_string = row_list[4]
 			ua_agent = parse(ua_string)
 			json_response = make_json_response(row_list, ua_agent)
 			json_responses.append(json_response)
-	return json_responses
+
+	return '\n'.join(json_responses)
 
 
 def make_json_response(row_list, ua_agent):
+	'''Creates the JSON object that will be pushed back to S3'''
 	geo_string = row_list[2]
 	la, lo = re.match("\[(.*?)\,(.*?)\]",geo_string).groups()
 	url = row_list[3]
@@ -34,6 +40,7 @@ def make_json_response(row_list, ua_agent):
 	browser_family = ua_agent.browser.family
 	os_string = ua_agent.ua_string
 	
+	#This might look better if declared globally and variables were passed with .replace()
 	json_string =[
 	
 				{
@@ -57,11 +64,11 @@ def make_json_response(row_list, ua_agent):
 				]
 	
 	json_obj = json.dumps(json_string)
-	print json_obj
 	return json_obj
 	
 	
 def getplace(lat,lon):
+	'''Uses the geodis module (doat/geodis in Github) to resolve city, country'''
 	geo_obj = geodis.City.getByLatLon(float(lat), float(lon), conn)			
 	city = geo_obj.name
 	country = geo_obj.country
