@@ -20,9 +20,6 @@ def make_all_json_responses(reader):
 			ua_agent = parse(ua_string)
 			json_response = make_json_response(row_list, ua_agent)
 			json_responses.append(json_response)
-	f = open('responses.json', 'w+')
-	f.write('\n'.join(json_responses))
-	f.close()
 	return '\n'.join(json_responses)
 
 

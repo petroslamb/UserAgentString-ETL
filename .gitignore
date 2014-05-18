@@ -1,2 +1,4 @@
+#====IGNORING====#
 *.swp
 *.pyc
+*.rdb

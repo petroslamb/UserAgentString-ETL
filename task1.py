@@ -120,8 +120,8 @@ def daemon():
 			transformed_content = transform_data(currated_content)
 			print push_filename + " transformed! \n" 
 
-			#compressed_string = load_data(push_filename, transformed_content)
-			#print filename + " pushed! \n" 
+			compressed_string = load_data(push_filename, transformed_content)
+			print filename + " pushed! \n" 
 	
 		# Filelist should be saved to file and reloaded to help with service errors
 		# A cleanup script should also clean that file when we need to rerun from scratch.
