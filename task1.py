@@ -26,6 +26,7 @@ import uuid
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
+import transform.py
 
 class S3Error(Exception):
 	"Misc. S3 Service Error"
@@ -39,9 +40,8 @@ def list_update(lista):
 	'''Checks if bucket has new files and returns a list of them'''
 	updated_filelist = []
 	for key in bucket.list():
-		#k =key.name.encode('utf-8')
 		if key.key not in lista:
-			if u'infrastructure/logs' in key.key:
+			if key.key.startswith(u'infrastructure/logs'):
 				updated_filelist.append(key.key)
 	return updated_filelist
 
